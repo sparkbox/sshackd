@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"sb/slack"
@@ -28,18 +28,33 @@ func returnDomain(address string) (domain string) {
 	return address[at+1:]
 }
 
-func main() {
-	root := func(w http.ResponseWriter, req *http.Request) {
-		code := req.URL.Query().Get("code")
-
-		if code != "" {
-			data := slack.ExchangeToken(code)
-			users := slack.UsersList(data.Token)
-			filteredUsers := filterUsers(users)
-			json.NewEncoder(w).Encode(filteredUsers)
+func isValidUser(users []slack.User, userId string) (found bool) {
+	for i := 0; i < len(users); i++ {
+		id := users[i].Id
+		if id == userId {
+			return true
 		}
 	}
+	return false
+}
 
-	http.HandleFunc("/", root)
+func login(w http.ResponseWriter, req *http.Request) {
+	code := req.URL.Query().Get("code")
+
+	if code != "" {
+		data := slack.ExchangeToken(code)
+		users := slack.UsersList(data.Authed_user.Access_token)
+		filteredUsers := filterUsers(users)
+		isValid := isValidUser(filteredUsers, data.Authed_user.Id)
+		if isValid {
+			io.WriteString(w, data.Authed_user.Id+":"+data.Authed_user.Access_token)
+		} else {
+			w.WriteHeader(401)
+		}
+	}
+}
+
+func main() {
+	http.HandleFunc("/login", login)
 	log.Fatal(http.ListenAndServe(":9001", nil))
 }

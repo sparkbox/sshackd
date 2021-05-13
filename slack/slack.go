@@ -18,8 +18,9 @@ type oAuthToken struct {
 		Id   string
 		Name string
 	}
-	authed_user struct {
-		Id string
+	Authed_user struct {
+		Id           string
+		Access_token string
 	}
 }
 
