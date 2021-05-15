@@ -3,9 +3,8 @@ package main
 import (
 	"encoding/json"
 	"io"
-	"log"
 	"net/http"
-	"os"
+	"sb/ca"
 	"sb/slack"
 	"strings"
 )
@@ -65,15 +64,16 @@ func ssh(w http.ResponseWriter, req *http.Request) {
 	filteredUsers := filterUsers(users)
 	isValid := isValidUser(filteredUsers, splits[0])
 	if isValid {
-		//sign key
-		io.WriteString(w, "signing key!")
+		key := ca.SignCert()
+		io.WriteString(w, key)
 	} else {
 		w.WriteHeader(401)
 	}
 }
 
 func main() {
-	http.HandleFunc("/login", login)
-	http.HandleFunc("/ssh", ssh)
-	log.Fatal(http.ListenAndServe(":"+os.Getenv("PORT"), nil))
+	// http.HandleFunc("/login", login)
+	// http.HandleFunc("/ssh", ssh)
+	// log.Fatal(http.ListenAndServe(":"+os.Getenv("PORT"), nil))
+	_ = ca.SignCert()
 }
