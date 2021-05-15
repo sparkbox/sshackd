@@ -64,8 +64,8 @@ func ssh(w http.ResponseWriter, req *http.Request) {
 	filteredUsers := filterUsers(users)
 	isValid := isValidUser(filteredUsers, splits[0])
 	if isValid {
-		key := ca.SignCert()
-		io.WriteString(w, key)
+		ca.SignCert()
+		io.WriteString(w, "done")
 	} else {
 		w.WriteHeader(401)
 	}
@@ -75,5 +75,5 @@ func main() {
 	// http.HandleFunc("/login", login)
 	// http.HandleFunc("/ssh", ssh)
 	// log.Fatal(http.ListenAndServe(":"+os.Getenv("PORT"), nil))
-	_ = ca.SignCert()
+	ca.SignCert()
 }

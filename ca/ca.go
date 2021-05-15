@@ -4,24 +4,31 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 	"io/ioutil"
-	"log"
+	"net"
+	"os"
 	"time"
 
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/agent"
 )
 
-// writePemToFile writes keys to a file
-func writeKeyToFile(keyBytes []byte, saveFileTo string) {
-	err := ioutil.WriteFile(saveFileTo, keyBytes, 0600)
+func addToAgent(cert *ssh.Certificate, key *ecdsa.PrivateKey) {
+	con, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK"))
+
 	if err != nil {
-		fmt.Println("error saving: ", err)
+		fmt.Println("can't connect to SSH agent: ", err)
 	}
 
-	log.Printf("Key saved to: %s", saveFileTo)
+	sshAgent := agent.NewClient(con)
+
+	if err = sshAgent.Add(agent.AddedKey{
+		PrivateKey:  key,
+		Certificate: cert,
+	}); err != nil {
+		fmt.Println("ssh-agent failure: ", err)
+	}
 }
 
 func genPrivateKey() *ecdsa.PrivateKey {
@@ -33,23 +40,8 @@ func genPrivateKey() *ecdsa.PrivateKey {
 	return privateKey
 }
 
-func privateString(key *ecdsa.PrivateKey) []byte {
-	privDer, err := x509.MarshalECPrivateKey(key)
-
-	if err != nil {
-		fmt.Println("Error generating string: ", err)
-	}
-
-	privBlock := pem.Block{
-		Type:    "EC PRIVATE KEY",
-		Headers: nil,
-		Bytes:   privDer,
-	}
-	privatePEM := pem.EncodeToMemory(&privBlock)
-	return privatePEM
-}
-
-func SignCert() string {
+// SignCert signs certs
+func SignCert() {
 	// user key pair
 	userKey := genPrivateKey()
 
@@ -60,31 +52,29 @@ func SignCert() string {
 		fmt.Println("user public key failed: ", e)
 	}
 
-	ca := genPrivateKey()
+	//read in private key to act as CA
+	caFile, readErr := ioutil.ReadFile("./ca.private")
 
-	// caPub goes to the server to accept things signed by the CA
-	caPub, e := ssh.NewPublicKey(&ca.PublicKey)
-
-	if e != nil {
-		fmt.Println("ca public key failed: ", e)
+	if readErr != nil {
+		fmt.Println("error reading private key: ", readErr)
 	}
 
-	caSigner, err := ssh.ParsePrivateKey(privateString(ca))
+	ca, caParseErr := ssh.ParsePrivateKey(caFile)
 
-	if err != nil {
-		fmt.Println("error creating CA Signer: ", err)
+	if caParseErr != nil {
+		fmt.Println("ca parse error: ", caParseErr)
 	}
 
-	expireTime, _ := time.ParseDuration("24h")
+	expireTime, _ := time.ParseDuration("2h")
 
 	//we create this Cert struct using the user's public key
 	//https://github.com/ejcx/sshcert/blob/1c64826f1a45d87777103946575701b0a062623a/sshcert.go#L82
 	// SignCert is called to sign an ssh public key and produce an ssh certificate.
 	certInstance := &ssh.Certificate{
 		Key:             userKeyPub,
-		Serial:          333,
+		Serial:          400,
 		CertType:        ssh.UserCert,
-		KeyId:           "fool",
+		KeyId:           "using key from file",
 		ValidAfter:      uint64(time.Now().Unix()),
 		ValidBefore:     uint64(time.Now().Add(expireTime).Unix()),
 		ValidPrincipals: []string{"root"},
@@ -101,27 +91,11 @@ func SignCert() string {
 	}
 
 	//certInstance is now signed!
-	certErr := certInstance.SignCert(rand.Reader, caSigner)
+	certErr := certInstance.SignCert(rand.Reader, ca)
 
 	if certErr != nil {
 		fmt.Println("Error signing Certificate: ", certErr)
 	}
 
-	//need this + private key to login
-	caTxt := privateString(ca)
-	//need this + private key to login
-	cert := ssh.MarshalAuthorizedKey(certInstance)
-	//need this + cert to login
-	userPrivate := privateString(userKey)
-	//this is just for testing
-	userPublic := ssh.MarshalAuthorizedKey(userKeyPub)
-	//need this to be on any server hostj
-	caPubText := ssh.MarshalAuthorizedKey(caPub)
-
-	writeKeyToFile(cert, "./cert.pub")
-	writeKeyToFile(caTxt, "./ca.private")
-	writeKeyToFile(userPrivate, "./user.private")
-	writeKeyToFile(userPublic, "./user.pub")
-	writeKeyToFile(caPubText, "./ca.pub")
-	return "yay"
+	addToAgent(certInstance, userKey)
 }
