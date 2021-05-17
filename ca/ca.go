@@ -4,32 +4,14 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"io/ioutil"
-	"net"
-	"os"
 	"time"
 
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/agent"
 )
-
-func addToAgent(cert *ssh.Certificate, key *ecdsa.PrivateKey) {
-	con, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK"))
-
-	if err != nil {
-		fmt.Println("can't connect to SSH agent: ", err)
-	}
-
-	sshAgent := agent.NewClient(con)
-
-	if err = sshAgent.Add(agent.AddedKey{
-		PrivateKey:  key,
-		Certificate: cert,
-	}); err != nil {
-		fmt.Println("ssh-agent failure: ", err)
-	}
-}
 
 func genPrivateKey() *ecdsa.PrivateKey {
 	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -40,8 +22,29 @@ func genPrivateKey() *ecdsa.PrivateKey {
 	return privateKey
 }
 
-// SignCert signs certs
-func SignCert() {
+func privateString(key *ecdsa.PrivateKey) []byte {
+	privDer, err := x509.MarshalECPrivateKey(key)
+
+	if err != nil {
+		fmt.Println("Error generating string: ", err)
+	}
+
+	privBlock := pem.Block{
+		Type:    "EC PRIVATE KEY",
+		Headers: nil,
+		Bytes:   privDer,
+	}
+	privatePEM := pem.EncodeToMemory(&privBlock)
+	return privatePEM
+}
+
+type Cert struct {
+	Certificate string
+	Key         string
+}
+
+// SignCert returns a struct which contains the Certificate and the generated private key as strings.
+func SignCert() Cert {
 	// user key pair
 	userKey := genPrivateKey()
 
@@ -97,5 +100,8 @@ func SignCert() {
 		fmt.Println("Error signing Certificate: ", certErr)
 	}
 
-	addToAgent(certInstance, userKey)
+	return Cert{
+		Certificate: string(ssh.MarshalAuthorizedKey(certInstance)),
+		Key:         string(privateString(userKey)),
+	}
 }

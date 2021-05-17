@@ -1,4 +1,4 @@
-module sb
+module slackd
 
 go 1.14
 

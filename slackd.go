@@ -3,9 +3,11 @@ package main
 import (
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
-	"sb/ca"
-	"sb/slack"
+	"os"
+	"slackd/ca"
+	"slackd/slack"
 	"strings"
 )
 
@@ -63,17 +65,17 @@ func ssh(w http.ResponseWriter, req *http.Request) {
 	users := slack.UsersList(splits[1])
 	filteredUsers := filterUsers(users)
 	isValid := isValidUser(filteredUsers, splits[0])
+
 	if isValid {
-		ca.SignCert()
-		io.WriteString(w, "done")
+		cert := ca.SignCert()
+		json.NewEncoder(w).Encode(cert)
 	} else {
 		w.WriteHeader(401)
 	}
 }
 
 func main() {
-	// http.HandleFunc("/login", login)
-	// http.HandleFunc("/ssh", ssh)
-	// log.Fatal(http.ListenAndServe(":"+os.Getenv("PORT"), nil))
-	ca.SignCert()
+	http.HandleFunc("/login", login)
+	http.HandleFunc("/ssh", ssh)
+	log.Fatal(http.ListenAndServe(":"+os.Getenv("PORT"), nil))
 }
