@@ -19,7 +19,8 @@ func filterUsers(users []slack.User) (filteredUsers []slack.User) {
 	for i := 0; i < len(users); i++ {
 		emailDomain := returnDomain(users[i].Profile.Email)
 		deleted := users[i].Deleted
-		if emailDomain == "heysparkbox.com" && !deleted {
+		teamId := users[i].TeamId
+		if teamId == os.Getenv("TEAM_ID") && emailDomain == os.Getenv("EMAIL_DOMAIN") && !deleted {
 			filteredUsers = append(filteredUsers, users[i])
 		}
 	}
