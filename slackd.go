@@ -63,7 +63,10 @@ func ssh(w http.ResponseWriter, req *http.Request) {
 
 	splits := strings.Split(s.Token, ":")
 
-	users := slack.UsersList(splits[1])
+	users, err := slack.UsersList(splits[1])
+	if err != nil {
+		w.Write([]byte(err.Error()))
+	}
 	filteredUsers := filterUsers(users)
 	isValid := isValidUser(filteredUsers, splits[0])
 

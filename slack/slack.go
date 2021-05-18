@@ -36,7 +36,11 @@ type User struct {
 }
 
 type userList struct {
-	Members []User
+	Ok       bool
+	Error    string
+	Needed   string
+	Provided string
+	Members  []User
 }
 
 func ExchangeToken(token string) (data oAuthToken) {
@@ -68,7 +72,7 @@ func ExchangeToken(token string) (data oAuthToken) {
 	return data
 }
 
-func UsersList(access_token string) (data []User) {
+func UsersList(access_token string) (data []User, error error) {
 	var d userList
 	url := url.URL{
 		Scheme: "https",
@@ -81,7 +85,7 @@ func UsersList(access_token string) (data []User) {
 	request, err := http.NewRequest("GET", url.String(), nil)
 
 	if err != nil {
-		log.Fatal("failed to create new request: ", err)
+		return data, err
 	}
 
 	request.Header.Set("authorization", "Bearer "+access_token)
@@ -89,16 +93,23 @@ func UsersList(access_token string) (data []User) {
 	res, err := client.Do(request)
 
 	if err != nil {
-		log.Fatal("failed to do request: ", err)
+		return data, err
 	}
-
-	json.NewDecoder(res.Body).Decode(&d)
 
 	defer res.Body.Close()
 
-	if err != nil {
-		log.Fatal("failed to parse user list: ", err)
+	json.NewDecoder(res.Body).Decode(&d)
+
+	if !d.Ok {
+		fmt.Println("Error: ", d.Error)
+		fmt.Println("Needed: ", d.Needed)
+		fmt.Println("Provided: ", d.Provided)
+		return data, err
 	}
 
-	return d.Members
+	if err != nil {
+		return data, err
+	}
+
+	return d.Members, nil
 }
