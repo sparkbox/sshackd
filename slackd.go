@@ -74,8 +74,13 @@ func ssh(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func root(w http.ResponseWriter, req *http.Request) {
+	w.WriteHeader(200)
+}
+
 func main() {
 	http.HandleFunc("/login", login)
 	http.HandleFunc("/ssh", ssh)
+	http.HandleFunc("/", root)
 	log.Fatal(http.ListenAndServe(":"+os.Getenv("PORT"), nil))
 }
