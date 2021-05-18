@@ -7,7 +7,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -56,13 +56,9 @@ func SignCert() Cert {
 	}
 
 	//read in private key to act as CA
-	caFile, readErr := ioutil.ReadFile("./ca.private")
+	caFile := os.Getenv("CAKEY")
 
-	if readErr != nil {
-		fmt.Println("error reading private key: ", readErr)
-	}
-
-	ca, caParseErr := ssh.ParsePrivateKey(caFile)
+	ca, caParseErr := ssh.ParsePrivateKey([]byte(caFile))
 
 	if caParseErr != nil {
 		fmt.Println("ca parse error: ", caParseErr)
