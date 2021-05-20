@@ -76,7 +76,7 @@ func SignCert() Cert {
 		KeyId:           "using key from file",
 		ValidAfter:      uint64(time.Now().Unix()),
 		ValidBefore:     uint64(time.Now().Add(expireTime).Unix()),
-		ValidPrincipals: []string{"root"},
+		ValidPrincipals: []string{"root", "sparkuser"},
 		Permissions: ssh.Permissions{
 			CriticalOptions: map[string]string{},
 			Extensions: map[string]string{
