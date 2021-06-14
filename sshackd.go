@@ -6,8 +6,8 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"slackd/ca"
-	"slackd/slack"
+	"sshackd/ca"
+	"sshackd/slack"
 	"strings"
 )
 

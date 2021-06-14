@@ -1,4 +1,4 @@
-module slackd
+module sshackd
 
 go 1.14
 
