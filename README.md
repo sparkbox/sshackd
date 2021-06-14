@@ -12,3 +12,6 @@ The various `ENV` variables you'll need are:
 - `PORT`: The port the app should run on.
 - `TEAM_ID`: The Slack team id. This is used to filter the list of users down.
 - `CAKEY`: The signing key
+
+The current CA public key is:
+`ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBL8nRqMPfSXufFdO7l6flrOf3NR0cm0J7BeR5qvWfWCfP4Gk7INbVQOEiA7emaHDDT8Uz0bCWn4dGsnrhUhzrVc= asimpson@simpson-linux`
