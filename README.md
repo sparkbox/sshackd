@@ -15,3 +15,5 @@ The various `ENV` variables you'll need are:
 
 The current CA public key is:
 `ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBL8nRqMPfSXufFdO7l6flrOf3NR0cm0J7BeR5qvWfWCfP4Gk7INbVQOEiA7emaHDDT8Uz0bCWn4dGsnrhUhzrVc= asimpson@simpson-linux`
+
+To generate a new CA use `ssh-keygen -t ECDSA`. Then change the env variable on the server instance to the private key and copy the public key to all desired servers.
